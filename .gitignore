@@ -3,3 +3,5 @@ repoData/*
 repoList.json
 repos.csv
 *.js
+*.js.map
+node_modules/*

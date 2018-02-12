@@ -1,6 +1,3 @@
-
-declare var require: any;
-
 var fs = require('fs');
 var https = require('https');
 

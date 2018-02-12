@@ -1,6 +1,3 @@
-
-declare var require: any;
-
 var fs = require('fs');
 var https = require('https');
 
@@ -31,8 +28,6 @@ function fetchNext() {
         res.on('data', (d: any) => body = body + d);
 
         res.on('end', () => {
-            var parsedData = JSON.parse(body);
-
             fs.writeFileSync(`repoData/data_${queries.length}_${pageNumber}.json`, body);
 
             if (pageNumber === 10) {
@@ -51,7 +46,6 @@ function fetchNext() {
             }
         });
     });
-
 }
 
 fetchNext();
