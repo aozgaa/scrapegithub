@@ -8,7 +8,7 @@ import process = require('process');
 type TagMap = { [_: string]: number };
 
 class TagStatsWriter {
-    private static tagRegex: RegExp = /\* (@[^\s{(<\\]*)/g;
+    private static tagRegex: RegExp = /\* @[\w\-]*/g;
     private tagDictionary: TagMap;
 
     constructor(private logPath: string) {
