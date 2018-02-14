@@ -1,5 +1,7 @@
 repos/*
 repoData/*
+docComments/*
+tagStats/*
 repoList.json
 repos.csv
 *.js

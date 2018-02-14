@@ -1,64 +1,13 @@
 // From each repo, generate a .csv with the following format
 // path, doc comment
 
-import fs = require('fs');
+import fs = require('graceful-fs');
 import util = require('util');
+import process = require('process');
 
 const docCommentRegex = /\/\*\*[^]*?\*\//g;
 
-fs.writeFileSync("./out.txt", `{ "data": [\n`);
-walk("./repos").then(() => {
-    fs.appendFileSync("./out.txt", "]}");
-    console.log("success");
-}).catch((reason) => {
-    fs.appendFileSync("./out.txt", "\n]}");
-    console.log(`failed: ${JSON.stringify(reason)}`);
-});
-
-
-interface Writer<T> {
-    start: ()=> void;
-    write: (filePath: string, jsDocComment: string) => Promise<void>;
-    /** it is the user's responsibility to await all promises *before* calling finish. */
-    finish: () => T;
-}
-
-type TagMap = { [_: string] : number};
-
-// @ts-ignore
-class TagStatsWriter implements Writer<TagMap> {
-    private static tagRegex: RegExp = /(@\S*)/g;
-    private tagDictionary: TagMap;
-
-    constructor() {
-        this.tagDictionary = {};
-    }
-
-    start() {}
-
-    write(_filePath: string, jsDocComment: string): Promise<void> {
-        const matches = jsDocComment.match(TagStatsWriter.tagRegex);
-        if(!matches) {
-            return Promise.resolve(void 0);
-        }
-        for(const match of matches) {
-            if(!this.tagDictionary[match]) {
-                this.tagDictionary[match] = 1;
-            } else {
-                this.tagDictionary[match] += 1;
-            }
-        }
-
-        return Promise.resolve(void 0);
-    }
-
-    finish() {
-        return this.tagDictionary;
-    }
-}
-
-// @ts-ignore
-class FileJsonWriter implements Writer<void> {
+class FileJsonWriter {
     private pastFirstLine: boolean;
     constructor(private logPath: string) {
         this.pastFirstLine = false;
@@ -69,7 +18,7 @@ class FileJsonWriter implements Writer<void> {
     }
 
     write(filePath: string, jsDocComment: string): Promise<void> {
-        const jsonBlob = `,\n  { ${JSON.stringify(filePath)}: ${JSON.stringify(jsDocComment)}}`;
+        const jsonBlob = `,\n  { "path": ${JSON.stringify(filePath)}, "comment": ${JSON.stringify(jsDocComment)}}`;
         if (this.pastFirstLine) {
             return util.promisify(fs.appendFile)(this.logPath, jsonBlob);
         } else {
@@ -84,28 +33,46 @@ class FileJsonWriter implements Writer<void> {
     }
 }
 
-let existsPrevEntry = false;
+const owner = process.argv[2];
+const searchDir = `c:\\scrape\\repos\\${owner}`;
+const logPath = `c:\\scrape\\docComments\\${owner}.json`;
+const writer = new FileJsonWriter(logPath);
+readJsFilesUnder(searchDir, writer).then(() => {
+    console.log(`success: ${logPath}`);
+}).catch((reason) => {
+    console.log(`failed: ${logPath} - ${JSON.stringify(reason)}`);
+});
 
-async function walk(path: string) {
+async function readJsFilesUnder(path: string, writer: FileJsonWriter) {
+    writer.start();
+    try {
+        await readJsFilesUnderHelper(path, writer);
+    }
+    finally {
+        writer.finish();
+    }
+}
+
+async function readJsFilesUnderHelper(path: string, writer: FileJsonWriter) {
     const readdirPromise = util.promisify(fs.readdir);
     const dirEntries = await readdirPromise(path);
     const subDirPromises: Promise<void>[] = [];
-    for(let dirEntry of dirEntries) {
+    for (let dirEntry of dirEntries) {
         if (!dirEntry) {
             continue;
         }
 
         const filePath = `${path}/${dirEntry}`;
-        
+
         const statPromise = util.promisify(fs.stat);
         const fileStats = await statPromise(filePath);
 
-        if(fileStats && fileStats.isDirectory()) {
+        if (fileStats && fileStats.isDirectory()) {
             // TODO: await here?
-            subDirPromises.push(walk(filePath));
+            subDirPromises.push(readJsFilesUnderHelper(filePath, writer));
         } else {
             const extension = dirEntry.split('.').pop();
-            if(extension !== 'js') {
+            if (extension !== 'js') {
                 continue;
             }
             const fileContentsPromise = util.promisify(fs.readFile);
@@ -114,9 +81,7 @@ async function walk(path: string) {
             let match = fileContents.match(docCommentRegex);
             if (match) {
                 for (const entry of match) {
-                    const jsonBlob = `  { ${JSON.stringify(filePath)}: ${JSON.stringify(entry)}}`;
-                    fs.appendFileSync("./out.txt", `${existsPrevEntry ? ",\n" : ""}${jsonBlob}`);
-                    existsPrevEntry = true;
+                    subDirPromises.push(writer.write(filePath, entry));
                 }
             }
         }

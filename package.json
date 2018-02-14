@@ -11,6 +11,10 @@
   "license": "ISC",
   "devDependencies": {
     "typescript": "^2.7.1",
-    "@types/node": "^9.4.4"
+    "@types/node": "^9.4.4",
+    "@types/graceful-fs": "4.1.2"
+  },
+  "dependencies": {
+    "graceful-fs": "^4.1.11"
   }
 }
