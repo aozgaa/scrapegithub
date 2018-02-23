@@ -18,7 +18,6 @@
     "./src/*"
   ],
   "exclude": [
-    "repoData/**",
-    "repos/**"
+    "data/**"
   ]
 }
