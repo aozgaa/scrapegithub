@@ -1,7 +1,9 @@
-# (TODO) Directory structure
+**Note** Running these scripts used up ~90gb disk space for me.
+
+# Directory structure
 - src/: Typescript source for scripts
 - bin/: location of scripts
-- scripts/: helper (powershell) for parallelizing work
+- scripts/: (powershell) helpers for parallelizing work
 - data/: outputs of scripts
 
 # TODO: remove hardcoded paths
@@ -10,6 +12,7 @@
 # TODO: make paths of repos owner_repo instead of owner/repo to ease iteration
 
 # To Use
+0) npm install && npm run build
 1) node bin/crawler.js -- ask github for the most popular repos
 2) node bin/merger.js -- merge the lists of repos collected in the previous step into a single list
 3) node bin/fetcher.js -- clone the repos from the previous step locally
