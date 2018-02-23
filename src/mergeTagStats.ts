@@ -2,19 +2,21 @@
 // path, doc comment
 
 import fs = require('graceful-fs');
-import util = require('util');
+import { IWriter } from "./IWriter";
+import { readFilesUnder } from './readFilesUnder';
 
 type TagMap = { [_: string]: number };
 
-class TagStatsWriter {
+class TagStatsWriter implements IWriter {
     private tagDictionary: TagMap;
 
     constructor(private logPath: string) {
         this.tagDictionary = {};
     }
 
-    write(tagMap: TagMap) {
-        for(const key in tagMap) {
+    write(fileContents: string) {
+        const tagMap: TagMap = JSON.parse(fileContents); 
+        for (const key in tagMap) {
             if (!this.tagDictionary.hasOwnProperty(key)) {
                 this.tagDictionary[key] = tagMap[key];
             } else {
@@ -30,45 +32,13 @@ class TagStatsWriter {
     }
 }
 
-const tagStatsDir = `c:\\scrape\\tagStats`;
-const logPath = `c:\\scrape\\collectedTagStats.json`;
+const tagStatsDir = `c:\\scrape\\data\\tagStats`;
+const logPath = `c:\\scrape\\data\\collectedTagStats.json`;
 
 const writer = new TagStatsWriter(logPath);
 
-getTags(tagStatsDir, writer).then(() => {
+readFilesUnder(tagStatsDir, writer).then(() => {
     console.log(`success: ${logPath}`);
 }).catch((reason) => {
     console.log(`failed: ${logPath} - ${JSON.stringify(reason)}`);
 });
-
-const maxPromises = 50;
-async function getTags(tagStatsDir: string, writer: TagStatsWriter) {
-    const readdirPromise = util.promisify(fs.readdir);
-    const dirEntries = await readdirPromise(tagStatsDir);
-
-    let filePromises: Promise<string>[] = [];
-    for (let i = 0; i < dirEntries.length; ++i) {  
-        if (filePromises.length >= maxPromises) {
-            for(const promise of filePromises) {
-                const tagsJson = await promise;
-                const tagMap = JSON.parse(tagsJson);
-                writer.write(tagMap);
-            }
-            filePromises = [];
-        }
-
-        const jsonFile = dirEntries[i];
-        const jsonPath = `${tagStatsDir}/${jsonFile}`;
-        const fileContentsPromise = util.promisify(fs.readFile)(jsonPath, "utf-8");
-        filePromises.push(fileContentsPromise);
-    }
-
-    for(const promise of filePromises) {
-        const tagsJson = await promise;
-        const tagMap = JSON.parse(tagsJson);
-        writer.write(tagMap);
-    }
-    filePromises = [];
-
-    writer.finish();
-}

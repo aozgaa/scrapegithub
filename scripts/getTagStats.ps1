@@ -2,14 +2,14 @@
 Get-Job | Remove-Job
 $MaxThreads = 8
 $repoFullPath = $(Get-Item .).fullName
-$pathToScript = Join-Path -Path $repoFullPath -ChildPath "out\getTagStats.js"
+$pathToScript = Join-Path -Path $repoFullPath -ChildPath "bin\getTagStats.js"
 
 $block = {
     Param([string] $pathToScript, [string] $jsonName)
     & node $pathToScript $jsonName
 }
 
-$commentJsonsDir = Join-Path -Path $repoFullPath -ChildPath "docComments"
+$commentJsonsDir = Join-Path -Path $repoFullPath -ChildPath "data\docComments"
 $commentJsons = Get-ChildItem -File $commentJsonsDir
 foreach ($commentJson in $commentJsons) {
     While ($(Get-Job -state running).count -ge $MaxThreads) {

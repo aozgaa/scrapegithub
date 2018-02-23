@@ -28,7 +28,7 @@ function fetchNext() {
         res.on('data', (d: any) => body = body + d);
 
         res.on('end', () => {
-            fs.writeFileSync(`repoData/data_${queries.length}_${pageNumber}.json`, body);
+            fs.writeFileSync(`data/repoMetadata/data_${queries.length}_${pageNumber}.json`, body);
 
             if (pageNumber === 10) {
                 if (activeQuery === undefined || activeQuery.length === 0) {

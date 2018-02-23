@@ -38,8 +38,8 @@ class TagStatsWriter {
 }
 
 const jsonName = process.argv[2];
-const docCommentsJsonPath = `c:\\scrape\\docComments\\${jsonName}`;
-const logPath = `c:\\scrape\\tagStats\\${jsonName}`;
+const docCommentsJsonPath = `c:\\scrape\\data\\docComments\\${jsonName}`;
+const logPath = `c:\\scrape\\data\\tagStats\\${jsonName}`;
 
 const writer = new TagStatsWriter(logPath);
 

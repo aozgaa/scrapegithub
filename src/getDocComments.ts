@@ -33,9 +33,11 @@ class FileJsonWriter {
     }
 }
 
-const owner = process.argv[2];
-const searchDir = `c:\\scrape\\repos\\${owner}`;
-const logPath = `c:\\scrape\\docComments\\${owner}.json`;
+const scrapeDataPath = process.argv[2];
+const owner = process.argv[3];
+const searchDir = `${scrapeDataPath}\\repos\\${owner}`;
+const logPath = `${scrapeDataPath}\\docComments\\${owner}.json`;
+
 const writer = new FileJsonWriter(logPath);
 readJsFilesUnder(searchDir, writer).then(() => {
     console.log(`success: ${logPath}`);

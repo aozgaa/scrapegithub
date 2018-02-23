@@ -13,7 +13,7 @@ function next() {
         next();
     } else {
         console.log('Download ' + entry.fullName);
-        var target = 'repos/' + entry.fullName;
+        var target = 'data/repos/' + entry.fullName;
         if (fs.existsSync(target)) {
             console.log('Already have it');
             setTimeout(next, 1);
