@@ -1,21 +1,22 @@
 $block = {
-    Param([string] $pathToScript, [string] $ownerName)
-    & node $pathToScript $ownerName
+    Param([string] $pathToScript, [string] $scrapeDataPath, [string] $ownerName)
+    & node $pathToScript $scrapeDataPath $ownerName
 }
 #Remove all jobs
 Get-Job | Remove-Job
 $MaxThreads = 8
 $repoFullPath = $(Get-Item .).fullName
 $pathToScript = Join-Path -Path $repoFullPath -ChildPath "bin\getDocComments.js"
+$scrapeDataPath = Join-Path -Path $repoFullPath -ChildPath "data"
 
-$dirObjs = Get-ChildItem -Directory .\repos
+$dirObjs = Get-ChildItem -Directory .\data\repos
 foreach ($dirObj in $dirObjs) {
     While ($(Get-Job -state running).count -ge $MaxThreads) {
         Start-Sleep -Milliseconds 3
     }
 
-    # working directory is changed by start job, so we supply an unqualified path.
-    Start-Job -Scriptblock $block -ArgumentList $pathToScript $dirObj.name
+    # working directory is changed by start job, so we supply an unqualified paths.
+    Start-Job -Scriptblock $block -ArgumentList $pathToScript, $scrapeDataPath, $dirObj.name
 }
 #Wait for all jobs to finish.
 While ($(Get-Job -State Running).count -gt 0) {
@@ -28,28 +29,3 @@ foreach ($job in Get-Job) {
 }
 #Remove all jobs created.
 Get-Job | Remove-Job
-
-
-
-#Remove all jobs
-Get-Job | Remove-Job
-$MaxThreads = 8
-$repoFullPath = $(Get-Item .).fullName
-$pathToScript = Join-Path -Path $repoFullPath -ChildPath "out\getTagStats.js"
-
-$block = {
-    Param([string] $pathToScript, [string] $jsonName)
-    & node $pathToScript $jsonName
-}
-
-$commentJsonsDir = Join-Path -Path $repoFullPath -ChildPath "docComments"
-$commentJsons = Get-ChildItem -File $commentJsonsDir
-foreach ($commentJson in $commentJsons) {
-    While ($(Get-Job -state running).count -ge $MaxThreads) {
-        Start-Sleep -Milliseconds 3
-    }
-    # & node $pathToScript $commentJson.name
-    # working directory is changed by start job, so we supply an unqualified path.
-    Start-Job -Scriptblock $block -ArgumentList $pathToScript, $commentJson.name
-}
-

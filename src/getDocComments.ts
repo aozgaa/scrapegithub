@@ -58,7 +58,7 @@ async function readJsFilesUnder(path: string, writer: FileJsonWriter) {
 async function readJsFilesUnderHelper(path: string, writer: FileJsonWriter) {
     const readdirPromise = util.promisify(fs.readdir);
     const dirEntries = await readdirPromise(path);
-    const subDirPromises: Promise<void>[] = [];
+    const promises: Promise<void>[] = [];
     for (let dirEntry of dirEntries) {
         if (!dirEntry) {
             continue;
@@ -70,27 +70,34 @@ async function readJsFilesUnderHelper(path: string, writer: FileJsonWriter) {
         const fileStats = await statPromise(filePath);
 
         if (fileStats && fileStats.isDirectory()) {
-            // TODO: await here?
-            subDirPromises.push(readJsFilesUnderHelper(filePath, writer));
+            if (dirEntry.indexOf("node_modules") === -1) {
+                promises.push(readJsFilesUnderHelper(filePath, writer));
+            }
         } else {
             const extension = dirEntry.split('.').pop();
             if (extension !== 'js') {
                 continue;
             }
-            const fileContentsPromise = util.promisify(fs.readFile);
-            const fileContents = await fileContentsPromise(filePath, "utf-8");
 
-            let match = fileContents.match(docCommentRegex);
-            if (match) {
-                for (const entry of match) {
-                    subDirPromises.push(writer.write(filePath, entry));
-                }
-            }
+            promises.push(handleJsFilePath(filePath));
         }
     }
 
-    for (const promise of subDirPromises) {
+    for (const promise of promises) {
         await promise;
     }
 }
+
+async function handleJsFilePath(filePath: string) {
+    const fileContentsPromise = util.promisify(fs.readFile);
+    const fileContents = await fileContentsPromise(filePath, "utf-8");
+
+    let match = fileContents.match(docCommentRegex);
+    if (match) {
+        for (const entry of match) {
+            await writer.write(filePath, entry);
+        }
+    }
+}
+
 
