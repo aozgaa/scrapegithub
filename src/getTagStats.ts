@@ -3,7 +3,7 @@
 
 import fs = require('graceful-fs');
 import util = require('util');
-import process = require('process');
+import parseJson = require('json-parse-better-errors');
 
 type TagMap = { [_: string]: number };
 
@@ -34,25 +34,53 @@ class TagStatsWriter {
 
     finish() {
         fs.writeFileSync(this.logPath, JSON.stringify(this.tagDictionary));
+        console.log(`success: ${this.logPath}`);
     }
 }
 
-const jsonName = process.argv[2];
-const docCommentsJsonPath = `c:\\scrape\\data\\docComments\\${jsonName}`;
-const logPath = `c:\\scrape\\data\\tagStats\\${jsonName}`;
+async function getTags(docCommentsDir: string) {
+    const readdirPromise = util.promisify(fs.readdir);
+    const jsDocJsonNames = await readdirPromise(docCommentsDir);
+    let promises: Promise<void>[] = [];
+    for (const jsDocJsonName of jsDocJsonNames) {
+        if (promises.length > 50) {
+            for (const promise of promises) {
+                try {
+                    await promise;
+                } catch (e) {
+                    console.log(JSON.stringify(e));
+                }
+            }
+            promises = [];
+        }
 
-const writer = new TagStatsWriter(logPath);
+        const jsDocJsonPath = `${docCommentsDir}\\${jsDocJsonName}`;
+        const logPath = `c:\\scrape\\data\\tagStats\\${jsDocJsonName}`;
+        const promise = getTagsForPath(jsDocJsonPath, logPath).catch((reason) => {
+            console.log(`failed: ${jsDocJsonPath}, ${logPath}, ${JSON.stringify(reason.stack)}`);
+        })
+        promises.push(promise);
+    }
 
-getTags(docCommentsJsonPath, writer).then(() => {
-    console.log(`success: ${logPath}`);
+    for (const promise of promises) {
+        await promise;
+    }
+}
+
+const docCommentsDir = `c:\\scrape\\data\\docComments`;
+
+getTags(docCommentsDir).then(() => {
+    console.log("success: done");
 }).catch((reason) => {
-    console.log(`failed: ${logPath} - ${JSON.stringify(reason)}`);
+    console.log(`failed: ${JSON.stringify(reason)}`);
 });
 
-async function getTags(filePath: string, writer: TagStatsWriter) {
+async function getTagsForPath(filePath: string, logPath: string) {
+    const writer = new TagStatsWriter(logPath);
+
     const fileContentsPromise = util.promisify(fs.readFile);
     const fileContents = await fileContentsPromise(filePath, "utf-8");
-    const ownerJson = JSON.parse(fileContents).data;
+    const ownerJson = parseJson(fileContents).data;
     for (const row of ownerJson) {
         const comment = row.comment;
         writer.write(comment);

@@ -15,6 +15,7 @@
     "typescript": "^2.7.1"
   },
   "dependencies": {
-    "graceful-fs": "^4.1.11"
+    "graceful-fs": "^4.1.11",
+    "json-parse-better-errors": "^1.0.1"
   }
 }
